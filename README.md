@@ -38,7 +38,27 @@ In order to achieve this improved latency reduction, the game developer needs to
 ## FSR 3 Frame Generation Support
 Anti-Lag 2 requires some special attention when FSR 3 frame generation is enabled. There are a couple of extra Anti-Lag 2 functions required to be called to let Anti-Lag 2 know whether the presented frames are interpolated or not.
 
-Until Anti-Lag 2 is supported in the public open-source release of FSR 3 (which is coming soon), developers are advised to reach out to their Developer Technology contacts at AMD.
+`AMD::AntiLag2DX12::MarkEndOfFrameRendering(&context)` should be called once the game's main rendering workload has been submitted, before the FSR 3 Present call is made.
+
+`AMD::AntiLag2DX12::SetFrameGenFrameType(&context,bInterpolatedFrame)` also needs to be called, but FSR 3.1.1 onwards calls this for you. However, for this to work, you will need to poke some data into the DXGI swapchain's private data each frame using a specific struct format using a specific GUID.
+
+An example of this would look something as follows:
+
+```C++
+// {5083ae5b-8070-4fca-8ee5-3582dd367d13}
+static const GUID IID_IFfxAntiLag2Data = 
+    {0x5083ae5b, 0x8070, 0x4fca, {0x8e, 0xe5, 0x35, 0x82, 0xdd, 0x36, 0x7d, 0x13}};
+
+struct AntiLag2Data
+{
+    AMD::AntiLag2DX12::Context* context;
+    bool                        enabled;
+} data;
+
+data.context = &m_AntiLag2Context;
+data.enabled = m_AntiLag2Enabled;
+pSwapChain->SetPrivateData( IID_IFfxAntiLag2Data, sizeof( data ), &data );
+```
 
 # Testing
 
@@ -69,7 +89,7 @@ OS:
 
 # Strings
 
-Recommended UI text can be found here: https://gpuopen.com/fidelityfx-naming-guidelines/
+Recommended UI text can be found here: https://gpuopen.com/fidelityfx-naming-guidelines/#antilag2
 
 <h2>Open source</h2>
 
